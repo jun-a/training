@@ -97,24 +97,24 @@ statusというフラグで論理的に削除して（存在しないように�
 
 #### よく使う関数・式・演算子など
 
-BETWEEEN
-LIKE
-IN
-COUNT
-SUM
-DISTINCT
-NOW
-DATE_FORMAT
-FIND_IN_SET
-INTERVAL
-CASE
-EXISTS
-UNION (ALL)
-LEFT(RIGHT) JOIN
-INNER JOIN
-GROUP BY
-HAVING
-GROUP_CONCAT
+- BETWEEEN
+- LIKE
+- IN
+- COUNT
+- SUM
+- DISTINCT
+- NOW
+- DATE_FORMAT
+- FIND_IN_SET
+- INTERVAL
+- CASE
+- EXISTS
+- UNION (ALL)
+- LEFT(RIGHT) JOIN
+- INNER JOIN
+- GROUP BY
+- HAVING
+- GROUP_CONCAT
 
 #### 例題
 
@@ -167,7 +167,7 @@ timestampはDATETIME型なので
 '2015-01-01 00:00:00' ≦ timestamp ≦ '2015-01-31 23:59:59'
 # 厳密には 「<= '2015-02-01 00:00:00'」なので
 # '2015-02-01 00:00:00' ジャストのデータがあれば含まれてしまう
-# 
+# 基本的にジャストになるようなデータはほとんどないので、楽に書きたい場合に使う 
 ```
 
 下記は全て等価
@@ -180,11 +180,6 @@ timestamp >= '2015-01-01'
 timestamp >= '2015-01-01 00:00:00'
     AND timestamp <= '2015-02-01 00:00:00'
 ```
-
-
-#### 実装依存な書き方
-
-
 
 
 ## NULLのおはなし
