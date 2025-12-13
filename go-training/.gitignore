@@ -19,6 +19,10 @@
 # 依存関係
 vendor/
 
+# Ruby関連
+Gemfile.lock
+.bundle/
+
 # IDEの設定ファイル
 .vscode/
 .idea/
