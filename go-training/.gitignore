@@ -4,6 +4,7 @@
 *.dll
 *.so
 *.dylib
+job-training
 
 # テスト用バイナリ
 *.test
@@ -15,6 +16,9 @@
 *.db
 *.sqlite
 *.sqlite3
+
+# テストハーネスファイル（学習者が作成）
+test_*.go
 
 # 依存関係
 vendor/

@@ -4,32 +4,6 @@ import (
 	"fmt"
 )
 
-// JobDiff は新旧求人データの差分を表す構造体
-type JobDiff struct {
-	ID              string
-	ChangeType      string // "added", "updated", "deleted", "unchanged"
-	TitleChanged    bool
-	SalaryChanged   bool
-	SalaryDiff      SalaryDiff
-	SkillsAdded     []string
-	SkillsRemoved   []string
-	DeadlineChanged bool
-	OldDeadline     string
-	NewDeadline     string
-	StatusChanged   bool
-	OldStatus       string
-	NewStatus       string
-	DescriptionChanged bool
-}
-
-// SalaryDiff は給与の差分を表す構造体
-type SalaryDiff struct {
-	OldMin int
-	OldMax int
-	NewMin int
-	NewMax int
-}
-
 // CompareJobs は新旧の求人データを比較して差分を抽出する
 func CompareJobs(oldJobs, newJobs []Job) []JobDiff {
 	// TODO: ここに新旧データの比較処理を実装してください

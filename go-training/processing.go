@@ -1,70 +1,12 @@
 package main
 
 import (
-	"encoding/xml"
 	"fmt"
-	"io"
-	"os"
-	"regexp"
-	"strconv"
-	"strings"
 )
 
-// JobRaw はXMLから読み込んだ生のデータを表す構造体
-type JobRaw struct {
-	ID                  string          `xml:"id"`
-	Title               string          `xml:"title"`
-	Company             CompanyRaw      `xml:"company"`
-	Description         string          `xml:"description"`
-	SalaryRaw           string          `xml:"salary"`
-	EmploymentType      string          `xml:"employment_type"`
-	RequiredSkills      RequiredSkills  `xml:"required_skills"`
-	PostedDate          string          `xml:"posted_date"`
-	ApplicationDeadline string          `xml:"application_deadline"`
-	IsRemoteRaw         string          `xml:"is_remote"`
-	Status              string          `xml:"status"`
-}
-
-// CompanyRaw は企業情報の生データを表す構造体
-type CompanyRaw struct {
-	Name     string `xml:"name"`
-	Location string `xml:"location"`
-}
-
-// JobsRaw はJobRawのリストを表す構造体
-type JobsRaw struct {
-	XMLName xml.Name `xml:"jobs"`
-	JobList []JobRaw `xml:"job"`
-}
-
-// Job は正規化後の求人情報を表す構造体
-type Job struct {
-	ID                  string
-	Title               string
-	Company             Company
-	Description         string
-	Salary              Salary
-	EmploymentType      string
-	RequiredSkills      []string
-	PostedDate          string
-	ApplicationDeadline string
-	IsRemote            bool
-	Status              string
-}
-
-// Company は企業情報を表す構造体
-type Company struct {
-	Name     string
-	Location string
-}
-
-// Salary は給与情報を表す構造体
-type Salary struct {
-	Min      int    // 年収の最低額（円）
-	Max      int    // 年収の最高額（円）
-	Currency string // 通貨単位
-	IsPublic bool   // 給与が公開されているか
-}
+// TODO: For better performance, compile regular expressions at package level
+// Example: var numberRegex = regexp.MustCompile(`\d+`)
+// This avoids recompiling the regex on every function call
 
 // LoadJobsFromXML はXMLファイルから求人データを読み込む
 func LoadJobsFromXML(filename string) (*JobsRaw, error) {
@@ -74,6 +16,13 @@ func LoadJobsFromXML(filename string) (*JobsRaw, error) {
 	// 2. defer file.Close()でファイルを閉じる
 	// 3. io.ReadAll()でファイルの内容を読み込む
 	// 4. xml.Unmarshal()でXMLをパース
+	// 
+	// 必要なインポート:
+	// import (
+	//     "encoding/xml"
+	//     "io"
+	//     "os"
+	// )
 	return nil, fmt.Errorf("not implemented")
 }
 
@@ -92,6 +41,12 @@ func TrimJobData(jobRaw JobRaw) JobRaw {
 	// ヒント:
 	// - strings.TrimSpace() で前後の空白を削除
 	// - regexp を使って複数の空白・改行を単一のスペースに置換
+	// 
+	// 必要なインポート:
+	// import (
+	//     "regexp"
+	//     "strings"
+	// )
 
 	return jobRaw
 }
@@ -117,9 +72,19 @@ func NormalizeSalary(salaryStr string) Salary {
 	// - strings.Contains() で特定の文字列が含まれているか確認
 	// - regexp.MustCompile() で正規表現パターンを作成
 	// - regexp.FindAllStringSubmatch() で数値を抽出
-	// - strconv.Atoi() で文字列を数値に変換
+	// - strconv.Atoi() で文字列を数値に変換（エラーハンドリングを忘れずに）
 	// - "万円"が含まれている場合は10000を掛ける
 	// - "月給"が含まれている場合は12を掛ける
+	// 
+	// NOTE: ハイフン「-」とダッシュ「〜」の両方を考慮すること
+	// NOTE: strconv.Atoi()のエラーは適切に処理すること（不正な文字列の場合）
+	// 
+	// 必要なインポート:
+	// import (
+	//     "regexp"
+	//     "strconv"
+	//     "strings"
+	// )
 
 	return Salary{
 		Min:      0,
@@ -146,6 +111,9 @@ func NormalizeRemote(remoteStr string) bool {
 	// ヒント:
 	// - strings.TrimSpace() で前後の空白を削除
 	// - strings.ToLower() で小文字に変換して比較
+	// 
+	// 必要なインポート:
+	// import "strings"
 
 	return false
 }
@@ -159,6 +127,8 @@ func NormalizeJob(jobRaw JobRaw) Job {
 	// 2. NormalizeSalary() で給与を正規化
 	// 3. NormalizeRemote() でリモートフラグを正規化
 	// 4. Job 構造体を組み立てる
+	// 
+	// NOTE: RequiredSkills.Skills を Job.RequiredSkills にマッピングすることを忘れずに
 
 	return Job{}
 }
@@ -178,7 +148,7 @@ func NormalizeJobs(jobsRaw *JobsRaw) []Job {
 // FilterBySkill は指定されたスキルを持つ求人をフィルタリングする
 func FilterBySkill(jobs []Job, skill string) []Job {
 	// TODO: ここに指定されたスキルを持つ求人をフィルタリングするコードを実装してください
-	// 注意: スキル名の比較時は大文字小文字を無視する
+	// 注意: スキル名の比較時は大文字小文字を無視する（strings.EqualFoldを使う）
 	return nil
 }
 
