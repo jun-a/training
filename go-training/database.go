@@ -4,6 +4,36 @@ import (
 	"fmt"
 )
 
+// database.go - データベース永続化の実装
+//
+// このファイルでは、以下のベストプラクティスを学びます：
+//
+// 1. トランザクションの使用
+//    - SaveJob内で単一求人をトランザクションで保存
+//    - SaveJobs内で複数求人を1つのトランザクションで保存するとさらに効率的
+//    - トランザクションはデータの一貫性を保証し、エラー時のロールバックを可能にする
+//
+// 2. N+1クエリ問題
+//    - GetAllJobsでは各求人ごとにスキルを取得すると、N+1クエリ問題が発生
+//    - 悪い例: SELECT * FROM jobs; の後、各求人に対して SELECT * FROM job_skills WHERE job_id = ?
+//    - 良い方法1: JOINを使って1つのクエリで取得
+//    - 良い方法2: すべてのスキルを一度に取得してメモリ上でマッピング
+//
+// 3. プリペアドステートメント
+//    - ループ内でクエリを実行する場合は、db.Prepare()を使用
+//    - SQLインジェクション対策とパフォーマンス向上に役立つ
+//    - 例: stmt, _ := db.Prepare("INSERT INTO job_skills (job_id, skill) VALUES (?, ?)")
+//          defer stmt.Close()
+//          for _, skill := range skills {
+//              stmt.Exec(jobID, skill)
+//          }
+//
+// 4. エラーハンドリング
+//    - すべてのデータベース操作でエラーをチェック
+//    - トランザクション使用時は、エラー発生時に必ずRollback()を呼び出す
+//
+// NOTE: Ruby実装（ruby-reference/database.rb）と比較して、Go実装の違いを学びましょう
+
 // DB はデータベース接続を管理する構造体
 // NOTE: この構造体は実装時に database/sql パッケージの sql.DB を使用します
 type DB struct {

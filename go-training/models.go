@@ -7,6 +7,8 @@ import "encoding/xml"
 // ============================================================
 
 // JobRaw はXMLから読み込んだ生のデータを表す構造体
+// NOTE: jobs_new.xmlとjobs_old.xmlにはstatusフィールドがあるが、
+//       jobs.xmlにはstatusフィールドがないことに注意
 type JobRaw struct {
 	ID                  string              `xml:"id"`
 	Title               string              `xml:"title"`
