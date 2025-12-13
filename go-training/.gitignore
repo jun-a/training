@@ -1,0 +1,33 @@
+# バイナリ
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# テスト用バイナリ
+*.test
+
+# カバレッジファイル
+*.out
+
+# データベースファイル
+*.db
+*.sqlite
+*.sqlite3
+
+# 依存関係
+vendor/
+
+# IDEの設定ファイル
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Macの設定ファイル
+.DS_Store
+
+# ログファイル
+*.log
