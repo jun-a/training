@@ -28,10 +28,12 @@ go-training/
 ├── diff.go                    # レベル3の課題（差分比較）
 ├── database.go                # レベル4の課題（データベース永続化）
 ├── main.go                    # レベル1の課題（基本的なXML読み込み）
-├── processing_answer.go       # レベル2の解答例
-├── diff_answer.go             # レベル3の解答例
-├── database_answer.go         # レベル4の解答例
-└── main_answer.go             # レベル1の解答例
+└── ruby-reference/            # Ruby言語による参考実装
+    ├── README.md              # Ruby実装の説明
+    ├── main.rb                # レベル1の参考実装
+    ├── processing.rb          # レベル2の参考実装
+    ├── diff.rb                # レベル3の参考実装
+    └── database.rb            # レベル4の参考実装
 ```
 
 ## 課題内容
@@ -428,15 +430,23 @@ func main() {
 
 ---
 
-## 解答例について
+## 参考実装について
 
-実装に困ったときは以下のファイルを参照してください:
-- `processing_answer.go` - レベル2の解答例
-- `diff_answer.go` - レベル3の解答例
-- `database_answer.go` - レベル4の解答例
-- `main_answer.go` - レベル1の解答例
+Go言語での実装に困ったときは、Ruby言語による参考実装を参照してください：
 
-ただし、まずは自分で考えて実装することをお勧めします。エラーと向き合うことが最大の学びになります！
+### Ruby言語による参考実装
+
+`ruby-reference/` ディレクトリに、同じ処理を実装したRubyコードがあります：
+- `ruby-reference/main.rb` - レベル1の参考実装
+- `ruby-reference/processing.rb` - レベル2の参考実装
+- `ruby-reference/diff.rb` - レベル3の参考実装
+- `ruby-reference/database.rb` - レベル4の参考実装
+
+Ruby実装は完全に動作するコードとして提供されています。Go言語とRubyの違いを学びながら、同じ処理をGo言語で実装してみてください。
+
+詳細は `ruby-reference/README.md` を参照してください。
+
+**ヒント**: まずは自分で考えて実装することをお勧めします。Ruby実装を見る前に、エラーと向き合うことが最大の学びになります！
 
 ---
 
