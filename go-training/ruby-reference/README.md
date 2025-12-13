@@ -4,6 +4,20 @@
 
 ## 環境構築
 
+### 方法1: Gemfileを使用（推奨）
+
+```bash
+cd go-training/ruby-reference
+
+# Bundlerをインストール（未インストールの場合）
+gem install bundler
+
+# 依存関係をインストール
+bundle install
+```
+
+### 方法2: 直接gemをインストール
+
 ```bash
 # Rubyのインストール (バージョン 3.0以上推奨)
 # macOS (Homebrew)
