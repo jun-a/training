@@ -4,9 +4,37 @@ import (
 	"fmt"
 )
 
-// TODO: For better performance, compile regular expressions at package level
-// Example: var numberRegex = regexp.MustCompile(`\d+`)
-// This avoids recompiling the regex on every function call
+// processing.go - データ正規化・トリム処理の実装
+//
+// ベストプラクティス:
+//
+// 1. 正規表現のパッケージレベルでのコンパイル
+//    関数内で regexp.MustCompile() を呼び出すと、関数が呼ばれるたびに
+//    正規表現がコンパイルされてしまい、パフォーマンスが低下します。
+//    
+//    悪い例（関数内でコンパイル）:
+//      func NormalizeSalary(s string) {
+//          re := regexp.MustCompile(`\d+`)  // 毎回コンパイルされる
+//          matches := re.FindAllString(s, -1)
+//      }
+//    
+//    良い例（パッケージレベルでコンパイル）:
+//      var numberRegex = regexp.MustCompile(`\d+`)
+//      func NormalizeSalary(s string) {
+//          matches := numberRegex.FindAllString(s, -1)  // 再利用
+//      }
+//
+// 2. エラーハンドリング
+//    strconv.Atoi() などの変換関数は必ずエラーを返します。
+//    不正な入力データに対して適切にエラーハンドリングすることが重要です。
+//
+//    例:
+//      if num, err := strconv.Atoi(str); err != nil {
+//          // エラー処理: デフォルト値を使うか、エラーをログに記録
+//          return 0
+//      } else {
+//          return num
+//      }
 
 // LoadJobsFromXML はXMLファイルから求人データを読み込む
 func LoadJobsFromXML(filename string) (*JobsRaw, error) {
