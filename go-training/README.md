@@ -1,280 +1,460 @@
-# Go言語トレーニング課題：求人データ処理システム
+# Go言語トレーニング課題：求人データ処理システム（実践編）
 
 ## 概要
-このトレーニング課題では、XMLファイルから求人データを読み込み、フィルタリング処理を行い、データベースに永続化する一連の処理を実装します。実際の求人検索エンジンの基本的な機能を模擬した実践的な課題です。
+このトレーニング課題では、XMLファイルから求人データを読み込み、データの正規化・トリム処理を行い、新旧データの差分比較を実施し、最終的にデータベースに永続化する一連の処理を実装します。実際の求人検索エンジンで必要となる実践的な処理を学べる課題です。
+
+## 課題で学べること
+
+実際の業務で必要となる以下のスキルを習得できます:
+
+✅ **ファイルの読み込み** - XMLファイルの読み込みとパース
+✅ **データの取得や構造化** - XMLデータを構造体に変換
+✅ **データハンドリング** - スライス操作、フィルタリング、ソート
+✅ **文字列のトリム処理** - 不要な空白や改行の削除
+✅ **データの正規化** - 様々な形式の給与データを統一フォーマットに変換
+✅ **特定の条件における判定** - 複雑な条件でのデータフィルタリング
+✅ **新旧の差分比較** - 2つのデータセット間の変更検出
+✅ **データベースへの書き込み** - SQLite3を使った永続化
+
+## ファイル構成
+
+```
+go-training/
+├── README.md                  # この課題説明ファイル
+├── jobs.xml                   # 旧形式の求人データ（8件）
+├── jobs_new.xml               # 新形式の求人データ（10件、正規化が必要）
+├── jobs_old.xml               # 差分比較用の旧データ（6件）
+├── processing.go              # レベル2の課題（データ正規化・トリム処理）
+├── diff.go                    # レベル3の課題（差分比較）
+├── database.go                # レベル4の課題（データベース永続化）
+├── main.go                    # レベル1の課題（基本的なXML読み込み）
+├── processing_answer.go       # レベル2の解答例
+├── diff_answer.go             # レベル3の解答例
+├── database_answer.go         # レベル4の解答例
+└── main_answer.go             # レベル1の解答例
+```
 
 ## 課題内容
 
-### レベル1: XML読み込みとフィルタリング（基礎）
-`main.go` にある以下の関数を実装してください。
+### レベル1: 基本的なXML読み込み（基礎）
+
+`main.go` を使用して、基本的なXMLファイルの読み込みを実装します。
+
+**課題:**
+- `jobs.xml`（整形済みのデータ）を読み込む
+- 基本的なフィルタリング機能を実装
+
+**確認方法:**
+```bash
+go run main.go
+```
+
+---
+
+### レベル2: データ正規化・トリム処理（実践）⭐
+
+`processing.go` にある関数を実装してください。**これが最も重要な課題です！**
 
 #### 1. `LoadJobsFromXML` 関数
-XMLファイルから求人データを読み込む関数を実装してください。
+XMLファイルから求人データを読み込みます。
 
 **実装のヒント:**
 ```go
 // 1. os.Open() でファイルを開く
 // 2. defer file.Close() でファイルを閉じる
 // 3. io.ReadAll() でファイルの内容を読み込む
-// 4. xml.Unmarshal() でXMLをパースして Jobs 構造体に変換
+// 4. xml.Unmarshal() でXMLをパース
 ```
 
-**確認方法:**
+#### 2. `TrimJobData` 関数
+求人データから不要な空白や改行を削除します。
+
+**対応すべきデータの問題:**
+- タイトルの前後に空白: `"  バックエンドエンジニア（Go言語）  "`
+- 企業名に空白: `"  デザインラボ株式会社  "`
+- 説明文に余分な改行や空白
+- スキル名に空白: `"  Go  "`, `"  PostgreSQL  "`
+- 雇用形態に空白: `"正社員  "`
+- ステータスに空白: `"  closed  "`
+
+**実装のヒント:**
+```go
+// - strings.TrimSpace() で前後の空白を削除
+// - regexp を使って複数の空白・改行を単一のスペースに置換
+// - 各フィールドに対して適切な処理を適用
+```
+
+#### 3. `NormalizeSalary` 関数 ⭐⭐⭐
+**最重要課題！** 様々な形式の給与データを統一フォーマットに正規化します。
+
+**対応すべき形式（`jobs_new.xml`に含まれています）:**
+
+| 入力形式 | 説明 | 期待される出力 |
+|---------|------|--------------|
+| `"年収 6,000,000円 〜 10,000,000円"` | カンマ区切り、範囲あり | Min: 6000000, Max: 10000000 |
+| `"500万円〜800万円"` | 万円表記、範囲あり | Min: 5000000, Max: 8000000 |
+| `"7000000"` | 数値のみ | Min: 7000000, Max: 7000000 |
+| `"月給 550,000円 〜 900,000円"` | 月給（年収に変換） | Min: 6600000, Max: 10800000 |
+| `"800〜1500万円"` | 万円表記、短縮形 | Min: 8000000, Max: 15000000 |
+| `"応相談（想定年収700〜1300万円）"` | 括弧内に範囲 | Min: 7000000, Max: 13000000 |
+| `"¥4,500,000 - ¥7,000,000"` | 円マーク、ハイフン区切り | Min: 4500000, Max: 7000000 |
+| `"年俸制 8,000,000円〜12,000,000円"` | 年俸制 | Min: 8000000, Max: 12000000 |
+| `""` (空文字列) | 給与非公開 | IsPublic: false |
+| `"非公開"` | 給与非公開 | IsPublic: false |
+
+**実装のヒント:**
+```go
+// 1. strings.TrimSpace() で前後の空白を削除
+// 2. strings.Contains() で「月給」「万円」「非公開」などをチェック
+// 3. カンマを削除: strings.ReplaceAll(s, ",", "")
+// 4. regexp で数値を抽出: regexp.MustCompile(`(\d+)`)
+// 5. 万円の場合は × 10000
+// 6. 月給の場合は × 12
+// 7. 数値が1つの場合は Min = Max
+// 8. 数値が2つの場合は Min, Max に分割
+```
+
+#### 4. `NormalizeRemote` 関数
+様々な形式のリモートフラグを正規化します。
+
+**対応すべき形式:**
+- `"true"`, `"TRUE"`, `"True"` → `true`
+- `"false"`, `"FALSE"`, `"False"` → `false`
+- `"yes"`, `"YES"`, `"Yes"` → `true`
+- `"no"`, `"NO"`, `"No"` → `false`
+- `"1"` → `true`
+- `"0"` → `false`
+- `"remote"`, `"Remote"`, `"REMOTE"` → `true`
+
+**実装のヒント:**
+```go
+// 1. strings.TrimSpace() で前後の空白を削除
+// 2. strings.ToLower() で小文字に変換
+// 3. switch文で分岐処理
+```
+
+#### 5. `NormalizeJob` 関数
+上記の正規化関数を組み合わせて、生データを正規化します。
+
+#### 6. フィルタリング関数群
+- `FilterBySkill`: スキルでフィルタリング（大文字小文字を無視）
+- `FilterByRemote`: リモート可能な求人のみ抽出
+- `FilterBySalaryRange`: 給与範囲でフィルタリング（非公開は除外）
+- `FilterByStatus`: ステータスでフィルタリング
+
+**テスト方法:**
 ```bash
-go run main.go
+go run processing.go
 ```
-「読み込んだ求人数: 8件」と表示されればOKです。
 
-#### 2. `FilterBySkill` 関数
-指定されたスキルを持つ求人をフィルタリングする関数を実装してください。
+---
+
+### レベル3: 新旧データの差分比較（応用）⭐⭐
+
+`diff.go` にある関数を実装してください。
+
+#### 差分比較の仕様
+
+`jobs_old.xml` と `jobs_new.xml` を比較して、以下の変更を検出します:
+
+**変更の種類:**
+- `added`: 新規追加された求人
+- `updated`: 更新された求人
+- `deleted`: 削除された求人
+- `unchanged`: 変更なしの求人
+
+**検出すべき変更内容:**
+- タイトルの変更
+- 給与の変更（上がった/下がった）
+- スキルの追加・削除
+- 締切日の変更
+- ステータスの変更（active → closed など）
+- 説明文の変更
+
+#### 実装する関数
+
+##### 1. `CompareJobs` 関数
+新旧の求人データを比較して差分を抽出します。
 
 **実装のヒント:**
 ```go
-// 1. jobs をループで回す
-// 2. 各求人の RequiredSkills.Skills をチェック
-// 3. 指定されたスキルが含まれていれば結果に追加
+// 1. 新旧の求人をIDでマップ化: map[string]Job
+// 2. 新しい求人をループ:
+//    - 旧データに存在しない → "added"
+//    - 旧データに存在 → 各フィールドを比較
+// 3. 旧データにあるが新データにない → "deleted"
 ```
 
-#### 3. `FilterByRemote` 関数
-リモート可能な求人をフィルタリングする関数を実装してください。
+##### 2. `FindSkillsDiff` 関数
+スキルの差分を検出します。
 
 **実装のヒント:**
 ```go
-// 1. jobs をループで回す
-// 2. IsRemote が true の求人を抽出
+// 1. oldSkillsとnewSkillsをマップ化: map[string]bool
+// 2. newSkillsにあってoldSkillsにない → added
+// 3. oldSkillsにあってnewSkillsにない → removed
 ```
 
-#### 4. `FilterBySalaryRange` 関数
-指定された給与範囲内の求人をフィルタリングする関数を実装してください。
+##### 3. フィルタリング関数群
+- `FilterByChangeType`: 変更タイプで絞り込み
+- `FilterBySalaryIncreased`: 給与が上がった求人のみ
+- `FilterBySkillsAdded`: スキルが追加された求人のみ
+- `FilterByStatusClosed`: クローズに変更された求人のみ
 
-**実装のヒント:**
-```go
-// 1. jobs をループで回す
-// 2. 求人の Salary.Min が minSalary 以上かつ
-//    Salary.Max が maxSalary 以下のものを抽出
+**実際のデータでの差分例:**
+
+| 求人ID | 変更内容 |
+|-------|---------|
+| JOB001 | 給与アップ（550〜900万 → 600〜1000万）、PostgreSQLスキル追加、締切延長 |
+| JOB002 | 給与アップ（480〜750万 → 500〜800万）、CSSスキル追加 |
+| JOB003 | 給与アップ（650万 → 700万）、GCPスキル追加 |
+| JOB004 | 新規追加（SREエンジニア） |
+| JOB005 | 新規追加（機械学習エンジニア） |
+| JOB006 | 給与アップ、プロダクト企画スキル追加、説明文更新 |
+| JOB007 | 新規追加（フルスタックエンジニア） |
+| JOB008 | 給与アップ、CI/CDスキル追加 |
+| JOB009 | 新規追加（DevOpsエンジニア） |
+| JOB010 | ステータスがclosedに変更、締切延長 |
+
+**テスト方法:**
+```bash
+go run processing.go diff.go processing_answer.go
 ```
 
-### レベル2: データベース永続化（応用）
-`database.go` にある以下の関数を実装してください。
+---
+
+### レベル4: データベース永続化（発展）
+
+`database.go` にある関数を実装してください。
 
 #### 準備
-SQLite3 ドライバをインストール:
 ```bash
 go get github.com/mattn/go-sqlite3
-```
-
-go.mod の初期化（未実施の場合）:
-```bash
 go mod init job-training
 go mod tidy
 ```
 
-#### 1. `NewDB` 関数
-データベース接続を作成する関数を実装してください。
+#### 実装する関数
 
-**実装のヒント:**
-```go
-// 1. sql.Open("sqlite3", dbPath) でデータベースを開く
-// 2. db.Ping() で接続を確認
-// 3. DB 構造体を返す
+1. `NewDB`: データベース接続の作成
+2. `CreateTables`: テーブルの作成（jobs, job_skills）
+3. `SaveJob`: 求人データの保存（トランザクション使用）
+4. `GetAllJobs`: すべての求人の取得
+5. `GetJobsBySkill`: スキルで絞り込み
+6. `GetJobsByRemote`: リモート可能な求人の取得
+7. `DeleteAllJobs`: すべての求人の削除
+
+詳細は `database.go` のコメントを参照してください。
+
+---
+
+## 実行方法
+
+### レベル1: 基本的なXML読み込み
+```bash
+go run main.go
 ```
 
-#### 2. `CreateTables` 関数
-必要なテーブルを作成する関数を実装してください。
-
-**実装のヒント:**
-```go
-// 1. db.conn.Exec() を使って CREATE TABLE 文を実行
-// 2. jobs テーブルと job_skills テーブルを作成
+### レベル2: データ正規化・トリム処理のテスト
+```bash
+# テストプログラムを作成して実行
+go run processing.go processing_answer.go -test
 ```
 
-#### 3. `SaveJob` 関数
-求人情報をデータベースに保存する関数を実装してください。
-
-**実装のヒント:**
-```go
-// 1. db.conn.Begin() でトランザクションを開始
-// 2. jobs テーブルに INSERT
-// 3. job_skills テーブルにスキル情報を INSERT
-// 4. tx.Commit() でコミット
-// エラー時は tx.Rollback() でロールバック
-```
-
-#### 4. `GetAllJobs` 関数
-データベースからすべての求人を取得する関数を実装してください。
-
-**実装のヒント:**
-```go
-// 1. SELECT 文で jobs テーブルから求人を取得
-// 2. 各求人について job_skills テーブルからスキルを取得
-// 3. Job 構造体に組み立てる
-```
-
-#### 5. `GetJobsBySkill` 関数
-指定されたスキルを持つ求人を取得する関数を実装してください。
-
-**実装のヒント:**
-```go
-// 1. jobs と job_skills テーブルを JOIN
-// 2. WHERE 句でスキルを絞り込む
-```
-
-#### 6. `GetJobsByRemote` 関数
-リモート可能な求人を取得する関数を実装してください。
-
-**実装のヒント:**
-```go
-// 1. WHERE is_remote = 1 で絞り込む
-```
-
-#### 7. `DeleteAllJobs` 関数
-すべての求人を削除する関数を実装してください。
-
-**実装のヒント:**
-```go
-// 1. トランザクションを開始
-// 2. job_skills を先に DELETE（外部キー制約のため）
-// 3. jobs を DELETE
-// 4. コミット
-```
-
-## データベース処理のテスト例
-
-以下のようなテストプログラムを作成して動作確認できます:
+以下のようなテストコードを作成できます:
 
 ```go
 package main
 
-import (
-	"fmt"
-	"log"
-)
+import "fmt"
 
-func testDatabase() {
+func main() {
 	// XMLから読み込み
-	jobs, err := LoadJobsFromXML("jobs.xml")
+	jobsRaw, err := LoadJobsFromXML("jobs_new.xml")
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
-	// データベース接続
-	db, err := NewDB("jobs.db")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
+	fmt.Printf("読み込んだ求人数: %d件\n", len(jobsRaw.JobList))
 
-	// テーブル作成
-	if err := db.CreateTables(); err != nil {
-		log.Fatal(err)
+	// 正規化
+	jobs := NormalizeJobs(jobsRaw)
+
+	// 結果を表示
+	for _, job := range jobs {
+		PrintJob(job)
 	}
 
-	// データ保存
-	if err := db.SaveJobs(jobs.JobList); err != nil {
-		log.Fatal(err)
-	}
+	// フィルタリングのテスト
+	goJobs := FilterBySkill(jobs, "Go")
+	fmt.Printf("\nGoスキルを持つ求人: %d件\n", len(goJobs))
 
-	// データ取得
-	savedJobs, err := db.GetAllJobs()
-	if err != nil {
-		log.Fatal(err)
-	}
+	remoteJobs := FilterByRemote(jobs)
+	fmt.Printf("リモート可能な求人: %d件\n", len(remoteJobs))
 
-	fmt.Printf("保存された求人数: %d件\n", len(savedJobs))
-
-	// スキルで絞り込み
-	goJobs, err := db.GetJobsBySkill("Go")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Printf("Goスキルを持つ求人数: %d件\n", len(goJobs))
+	activeJobs := FilterByStatus(jobs, "active")
+	fmt.Printf("アクティブな求人: %d件\n", len(activeJobs))
 }
 ```
 
-## ファイル構成
+### レベル3: 差分比較のテスト
+```go
+package main
 
+import "fmt"
+
+func main() {
+	// 旧データを読み込み
+	oldJobsRaw, _ := LoadJobsFromXML("jobs_old.xml")
+	oldJobs := NormalizeJobs(oldJobsRaw)
+
+	// 新データを読み込み
+	newJobsRaw, _ := LoadJobsFromXML("jobs_new.xml")
+	newJobs := NormalizeJobs(newJobsRaw)
+
+	// 差分を比較
+	diffs := CompareJobs(oldJobs, newJobs)
+
+	// サマリー表示
+	PrintDiffSummary(diffs)
+
+	// 詳細表示
+	fmt.Println("\n=== すべての差分 ===")
+	for _, diff := range diffs {
+		PrintJobDiff(diff)
+	}
+
+	// 給与が上がった求人
+	fmt.Println("\n=== 給与が上がった求人 ===")
+	salaryIncreased := FilterBySalaryIncreased(diffs)
+	for _, diff := range salaryIncreased {
+		PrintJobDiff(diff)
+	}
+
+	// スキルが追加された求人
+	fmt.Println("\n=== スキルが追加された求人 ===")
+	skillsAdded := FilterBySkillsAdded(diffs)
+	for _, diff := range skillsAdded {
+		PrintJobDiff(diff)
+	}
+}
 ```
-go-training/
-├── README.md              # この課題説明ファイル
-├── jobs.xml               # 求人データ（8件の求人情報）
-├── main.go                # レベル1の課題（XMLの読み込みとフィルタリング）
-├── database.go            # レベル2の課題（データベース永続化）
-├── main_answer.go         # レベル1の解答例
-└── database_answer.go     # レベル2の解答例
-```
+
+---
 
 ## 学習のポイント
 
-### レベル1で学べること
-- Go言語での構造体の定義と使用
-- XMLパッケージを使ったデータの読み込み
-- スライスの操作とループ処理
-- エラーハンドリングの基礎
+### レベル2で学べること（最重要）
+- **文字列処理の実践**: `strings` パッケージの活用
+- **正規表現**: `regexp` パッケージを使ったパターンマッチング
+- **データ正規化**: 様々な形式のデータを統一フォーマットに変換
+- **エラーハンドリング**: 不正なデータへの対応
+- **型変換**: `strconv` パッケージの使用
 
-### レベル2で学べること
-- database/sqlパッケージの使用方法
-- SQLite3との連携
-- トランザクション処理
-- SQLクエリの実行とデータの取得
-- データベース設計の基礎
+### レベル3で学べること
+- **データ構造の選択**: マップを使った効率的な検索
+- **アルゴリズム**: 差分検出のロジック
+- **複雑な条件判定**: 多様な変更パターンの検出
+- **データ分析**: 変更内容の統計処理
 
-## 求人データについて
+### レベル4で学べること
+- **データベース操作**: SQL の基礎
+- **トランザクション**: データの一貫性保証
+- **JOIN クエリ**: 複数テーブルの結合
+- **インデックス**: パフォーマンス最適化
 
-`jobs.xml` には以下の8件の求人データが含まれています:
+---
 
-1. **JOB001**: バックエンドエンジニア（Go言語） - 東京都渋谷区
-2. **JOB002**: フロントエンドエンジニア - 大阪府大阪市北区
-3. **JOB003**: データエンジニア - 東京都港区
-4. **JOB004**: SREエンジニア - 福岡県福岡市中央区
-5. **JOB005**: 機械学習エンジニア - 東京都千代田区
-6. **JOB006**: プロダクトマネージャー - 東京都新宿区
-7. **JOB007**: フルスタックエンジニア（契約社員） - 神奈川県横浜市
-8. **JOB008**: QAエンジニア - 愛知県名古屋市
+## よくある実装のポイント
 
-各求人には以下の情報が含まれています:
-- 求人ID
-- タイトル
-- 企業名・所在地
-- 説明文
-- 給与範囲
-- 雇用形態
-- 必要スキル
-- 掲載日・応募締切
-- リモート可否
+### 給与の正規化で詰まったら
 
-## 解答例について
+1. **まずは簡単なケースから実装する**
+   ```go
+   // ステップ1: 空文字列と「非公開」のチェック
+   // ステップ2: カンマの削除
+   // ステップ3: 数値の抽出
+   // ステップ4: 「万円」のチェックと変換
+   // ステップ5: 「月給」のチェックと変換
+   ```
 
-実装に困ったときは `main_answer.go` と `database_answer.go` を参照してください。ただし、まずは自分で考えて実装することをお勧めします。
+2. **正規表現のテスト**
+   ```go
+   numberRegex := regexp.MustCompile(`(\d+)`)
+   matches := numberRegex.FindAllString("年収 600万円〜1000万円", -1)
+   fmt.Println(matches) // ["600", "1000"]
+   ```
 
-## 実行方法
+3. **デバッグ出力を活用**
+   ```go
+   fmt.Printf("入力: %s\n", salaryStr)
+   fmt.Printf("抽出された数値: %v\n", matches)
+   fmt.Printf("結果: Min=%d, Max=%d\n", min, max)
+   ```
 
-### レベル1の実行
-```bash
-cd go-training
-go run main.go
-```
+### 差分比較で詰まったら
 
-### レベル2の実行（データベース処理を含む場合）
-```bash
-# 必要なパッケージをインストール
-go mod init job-training
-go get github.com/mattn/go-sqlite3
-go mod tidy
+1. **マップの活用**
+   ```go
+   // IDをキーにしたマップを作成
+   oldJobMap := make(map[string]Job)
+   for _, job := range oldJobs {
+       oldJobMap[job.ID] = job
+   }
 
-# 実行
-go run main.go database.go
-```
+   // 存在チェックが高速に
+   if oldJob, exists := oldJobMap[newJob.ID]; exists {
+       // 比較処理
+   }
+   ```
+
+2. **小さいデータでテスト**
+   - まずは2件程度のデータでテストする
+   - 各ケース（added, updated, deleted）を個別に確認
+
+---
 
 ## 発展課題
 
-基本課題が完了したら、以下のような機能追加にもチャレンジしてみてください:
+基本課題が完了したら、以下にもチャレンジしてみてください:
 
-1. **複数スキルでのフィルタリング**: AND条件、OR条件の両方に対応
-2. **ソート機能**: 給与順、掲載日順などでソート
-3. **全文検索**: 説明文からキーワード検索
-4. **集計機能**: 都道府県別の求人数、スキル別の平均給与など
-5. **JSON出力**: フィルタリング結果をJSONで出力
-6. **Webサーバー化**: net/httpパッケージを使ってREST APIを作成
+1. **バリデーション機能**: 不正なデータの検出とエラーレポート
+2. **CSV出力**: フィルタリング結果をCSVファイルに出力
+3. **JSON API**: net/httpパッケージでREST APIを作成
+4. **並行処理**: goroutineを使った高速化
+5. **テストコード**: testing パッケージでユニットテスト作成
+6. **CLI ツール化**: flag パッケージでコマンドラインツールに
+7. **差分レポート**: 変更内容をMarkdown形式でレポート出力
 
-頑張ってください！
+---
+
+## 解答例について
+
+実装に困ったときは以下のファイルを参照してください:
+- `processing_answer.go` - レベル2の解答例
+- `diff_answer.go` - レベル3の解答例
+- `database_answer.go` - レベル4の解答例
+- `main_answer.go` - レベル1の解答例
+
+ただし、まずは自分で考えて実装することをお勧めします。エラーと向き合うことが最大の学びになります！
+
+---
+
+## トラブルシューティング
+
+### XMLのパースに失敗する
+- ファイルパスが正しいか確認
+- ファイルのエンコーディングがUTF-8か確認
+- XMLの構造が正しいか確認
+
+### 給与の正規化がうまくいかない
+- デバッグ出力で中間結果を確認
+- 正規表現のパターンをテストツールで確認
+- 一つずつケースを追加して実装
+
+### 差分比較の結果が合わない
+- マップのキー（ID）が正しいか確認
+- 比較ロジックを一つずつ確認
+- 小さいデータセットでテスト
+
+頑張ってください！実践的なスキルが身につきます！
