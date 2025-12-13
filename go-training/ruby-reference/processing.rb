@@ -73,16 +73,15 @@ end
 
 # XMLファイルから求人データを読み込む
 def load_jobs_from_xml(filename)
-  file = File.open(filename)
-  doc = Nokogiri::XML(file)
-  file.close
-
   jobs_raw = []
 
-  doc.xpath('//job').each do |job_node|
-    # 生データとして読み込む
-    job_raw = JobRaw.new(
-      id: job_node.at_xpath('id')&.text,
+  File.open(filename) do |file|
+    doc = Nokogiri::XML(file)
+
+    doc.xpath('//job').each do |job_node|
+      # 生データとして読み込む
+      job_raw = JobRaw.new(
+        id: job_node.at_xpath('id')&.text,
       title: job_node.at_xpath('title')&.text,
       company_name: job_node.at_xpath('company/name')&.text,
       company_location: job_node.at_xpath('company/location')&.text,
@@ -97,6 +96,7 @@ def load_jobs_from_xml(filename)
     )
 
     jobs_raw << job_raw
+  end
   end
 
   jobs_raw
@@ -139,8 +139,9 @@ def normalize_salary(salary_str)
   # カンマと円マークを削除
   normalized = salary_str.gsub(/[,¥円]/, '')
 
-  # 全角の波ダッシュと全角チルダを統一
-  normalized = normalized.gsub(/[〜～]/, '~')
+  # 全角の波ダッシュ（U+FF5E）と全角チルダ（U+301C）を統一
+  # 〜 = U+FF5E (fullwidth tilde), ～ = U+301C (wave dash)
+  normalized = normalized.gsub(/[\u{FF5E}\u{301C}]/, '~')
 
   # 数値を抽出（正規表現）
   numbers = normalized.scan(/(\d+)/).flatten.map(&:to_i)

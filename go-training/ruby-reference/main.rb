@@ -49,51 +49,50 @@ end
 
 # XMLファイルから求人データを読み込む
 def load_jobs_from_xml(filename)
-  # ファイルを開いてパース
-  file = File.open(filename)
-  doc = Nokogiri::XML(file)
-  file.close
-
   jobs = []
 
-  # 各jobノードを処理
-  doc.xpath('//job').each do |job_node|
-    # 企業情報を取得
-    company_node = job_node.at_xpath('company')
-    company = Company.new(
-      name: company_node.at_xpath('name').text,
-      location: company_node.at_xpath('location').text
-    )
+  File.open(filename) do |file|
+    doc = Nokogiri::XML(file)
 
-    # 給与情報を取得
-    salary_node = job_node.at_xpath('salary')
-    salary = Salary.new(
-      min: salary_node.at_xpath('min').text.to_i,
-      max: salary_node.at_xpath('max').text.to_i,
-      currency: salary_node.at_xpath('currency').text
-    )
+    # 各jobノードを処理
+    doc.xpath('//job').each do |job_node|
+      # 企業情報を取得
+      company_node = job_node.at_xpath('company')
+      company = Company.new(
+        name: company_node.at_xpath('name').text,
+        location: company_node.at_xpath('location').text
+      )
 
-    # 必要スキルを取得
-    skills = job_node.xpath('required_skills/skill').map(&:text)
+      # 給与情報を取得
+      salary_node = job_node.at_xpath('salary')
+      salary = Salary.new(
+        min: salary_node.at_xpath('min').text.to_i,
+        max: salary_node.at_xpath('max').text.to_i,
+        currency: salary_node.at_xpath('currency').text
+      )
 
-    # リモート可否を取得
-    is_remote = job_node.at_xpath('is_remote').text == 'true'
+      # 必要スキルを取得
+      skills = job_node.xpath('required_skills/skill').map(&:text)
 
-    # Job オブジェクトを作成
-    job = Job.new(
-      id: job_node.at_xpath('id').text,
-      title: job_node.at_xpath('title').text,
-      company: company,
-      description: job_node.at_xpath('description').text,
-      salary: salary,
-      employment_type: job_node.at_xpath('employment_type').text,
-      required_skills: skills,
-      posted_date: job_node.at_xpath('posted_date').text,
-      application_deadline: job_node.at_xpath('application_deadline').text,
-      is_remote: is_remote
-    )
+      # リモート可否を取得
+      is_remote = job_node.at_xpath('is_remote').text == 'true'
 
-    jobs << job
+      # Job オブジェクトを作成
+      job = Job.new(
+        id: job_node.at_xpath('id').text,
+        title: job_node.at_xpath('title').text,
+        company: company,
+        description: job_node.at_xpath('description').text,
+        salary: salary,
+        employment_type: job_node.at_xpath('employment_type').text,
+        required_skills: skills,
+        posted_date: job_node.at_xpath('posted_date').text,
+        application_deadline: job_node.at_xpath('application_deadline').text,
+        is_remote: is_remote
+      )
+
+      jobs << job
+    end
   end
 
   jobs

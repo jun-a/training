@@ -273,8 +273,11 @@ end
 
 # メイン処理
 if __FILE__ == $0
+  # データベースファイル名（環境変数から取得、デフォルトはjobs.db）
+  db_path = ENV['DB_PATH'] || 'jobs.db'
+  
   # データベースを作成
-  db = JobDatabase.new('jobs.db')
+  db = JobDatabase.new(db_path)
 
   begin
     # テーブルを作成
