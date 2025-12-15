@@ -4,31 +4,37 @@ import (
 	"fmt"
 )
 
-// JobDiff は新旧求人データの差分を表す構造体
-type JobDiff struct {
-	ID              string
-	ChangeType      string // "added", "updated", "deleted", "unchanged"
-	TitleChanged    bool
-	SalaryChanged   bool
-	SalaryDiff      SalaryDiff
-	SkillsAdded     []string
-	SkillsRemoved   []string
-	DeadlineChanged bool
-	OldDeadline     string
-	NewDeadline     string
-	StatusChanged   bool
-	OldStatus       string
-	NewStatus       string
-	DescriptionChanged bool
-}
-
-// SalaryDiff は給与の差分を表す構造体
-type SalaryDiff struct {
-	OldMin int
-	OldMax int
-	NewMin int
-	NewMax int
-}
+// diff.go - 新旧データの差分比較の実装
+//
+// ベストプラクティス:
+//
+// 1. マップを使った効率的な検索
+//    2つのスライスを比較する際、ネストされたループ（O(n²)）は避け、
+//    マップを使用して O(n) で実装します。
+//    
+//    悪い例（O(n²)）:
+//      for _, newJob := range newJobs {
+//          for _, oldJob := range oldJobs {  // ネストループ
+//              if newJob.ID == oldJob.ID {
+//                  // 比較処理
+//              }
+//          }
+//      }
+//    
+//    良い例（O(n)）:
+//      oldJobMap := make(map[string]Job)
+//      for _, job := range oldJobs {
+//          oldJobMap[job.ID] = job
+//      }
+//      for _, newJob := range newJobs {
+//          if oldJob, exists := oldJobMap[newJob.ID]; exists {
+//              // 比較処理（O(1)でアクセス）
+//          }
+//      }
+//
+// 2. スライスの差分検出
+//    2つのスライス（例: スキルリスト）の差分を検出する際も、
+//    マップを使用すると効率的です。
 
 // CompareJobs は新旧の求人データを比較して差分を抽出する
 func CompareJobs(oldJobs, newJobs []Job) []JobDiff {

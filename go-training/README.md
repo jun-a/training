@@ -24,10 +24,11 @@ go-training/
 ├── jobs.xml                   # 旧形式の求人データ（8件）
 ├── jobs_new.xml               # 新形式の求人データ（10件、正規化が必要）
 ├── jobs_old.xml               # 差分比較用の旧データ（6件）
+├── models.go                  # 共通の型定義（Raw/Normalized types）
+├── main.go                    # レベル1の課題（基本的なXML読み込み）
 ├── processing.go              # レベル2の課題（データ正規化・トリム処理）
 ├── diff.go                    # レベル3の課題（差分比較）
 ├── database.go                # レベル4の課題（データベース永続化）
-├── main.go                    # レベル1の課題（基本的なXML読み込み）
 └── ruby-reference/            # Ruby言語による参考実装
     ├── README.md              # Ruby実装の説明
     ├── main.rb                # レベル1の参考実装
@@ -35,6 +36,29 @@ go-training/
     ├── diff.rb                # レベル3の参考実装
     └── database.rb            # レベル4の参考実装
 ```
+
+**注意:** `models.go` には全レベルで共有される型定義が含まれています。`go run` でプログラムを実行する際は、必ずこのファイルを含めてください。
+
+### 型定義について
+
+このプロジェクトでは、XMLの形式に応じて異なる型を使用します：
+
+- **JobRaw**: XMLから読み込む生データ用（jobs_new.xml, jobs_old.xml）
+  - 給与が文字列 (SalaryRaw)
+  - リモートフラグが文字列 (IsRemoteRaw)
+  - ステータスフィールドあり
+  
+- **JobLevel1**: レベル1用の構造化データ（jobs.xml）
+  - 給与が構造化（SalaryLevel1: Min/Max/Currency）
+  - リモートフラグがbool
+  - ステータスフィールドなし
+  
+- **Job**: 正規化後のデータ（レベル2以降）
+  - すべてのフィールドが正規化済み
+  - 給与情報に IsPublic フィールド追加
+  - スキルが文字列スライス
+
+この設計により、各XMLファイルの形式に応じた適切な型を使用でき、型の重複宣言エラーを回避できます。
 
 ## 課題内容
 
@@ -219,8 +243,13 @@ go run processing.go
 | JOB010 | ステータスがclosedに変更、締切延長 |
 
 **テスト方法:**
+
+差分比較をテストするには、別のテストプログラムを作成してください。以下の例を参考にしてください：
+
+テストファイル例 (`test_diff.go`):
 ```bash
-go run processing.go diff.go processing_answer.go
+# 実行方法
+go run models.go processing.go diff.go test_diff.go
 ```
 
 ---
@@ -230,9 +259,15 @@ go run processing.go diff.go processing_answer.go
 `database.go` にある関数を実装してください。
 
 #### 準備
+
+Go モジュールの初期化とSQLite3ドライバのインストール:
+
 ```bash
-go get github.com/mattn/go-sqlite3
+# すでにgo.modがある場合はスキップ
 go mod init job-training
+
+# SQLite3ドライバをインストール
+go get github.com/mattn/go-sqlite3
 go mod tidy
 ```
 
@@ -253,17 +288,23 @@ go mod tidy
 ## 実行方法
 
 ### レベル1: 基本的なXML読み込み
+
+基本的な練習用のファイルです。整形済みのXMLデータ（`jobs.xml`）を使用します。
+
 ```bash
-go run main.go
+# main.goを単独で実行
+go run models.go main.go
 ```
+
+---
 
 ### レベル2: データ正規化・トリム処理のテスト
-```bash
-# テストプログラムを作成して実行
-go run processing.go processing_answer.go -test
-```
 
-以下のようなテストコードを作成できます:
+`processing.go`の関数を実装してテストします。テストプログラムを作成して実行してください。
+
+#### テストプログラムの作成例
+
+`test_processing.go` を作成:
 
 ```go
 package main
@@ -299,7 +340,25 @@ func main() {
 }
 ```
 
+#### 実行方法
+
+```bash
+# 必要なファイルを指定して実行
+go run models.go processing.go test_processing.go
+```
+
+**注意:** `go run`では必ず`models.go`を含めてください。これは共通の型定義ファイルです。
+
+---
+
 ### レベル3: 差分比較のテスト
+
+`diff.go`の関数を実装してテストします。
+
+#### テストプログラムの作成例
+
+`test_diff.go` を作成:
+
 ```go
 package main
 
@@ -340,6 +399,102 @@ func main() {
 		PrintJobDiff(diff)
 	}
 }
+```
+
+#### 実行方法
+
+```bash
+# 必要なファイルを指定して実行
+go run models.go processing.go diff.go test_diff.go
+```
+
+---
+
+### レベル4: データベース永続化のテスト
+
+`database.go`の関数を実装してテストします。
+
+#### テストプログラムの作成例
+
+`test_database.go` を作成:
+
+```go
+package main
+
+import (
+	"fmt"
+	"os"
+)
+
+func main() {
+	// データベース接続
+	db, err := NewDB("jobs.db")
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+
+	// テーブル作成
+	if err := db.CreateTables(); err != nil {
+		panic(err)
+	}
+
+	// データを読み込んで保存
+	jobsRaw, err := LoadJobsFromXML("jobs_new.xml")
+	if err != nil {
+		panic(err)
+	}
+
+	jobs := NormalizeJobs(jobsRaw)
+
+	fmt.Printf("保存する求人数: %d件\n", len(jobs))
+	if err := db.SaveJobs(jobs); err != nil {
+		panic(err)
+	}
+
+	fmt.Println("データベースへの保存が完了しました")
+
+	// 取得テスト
+	allJobs, err := db.GetAllJobs()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("データベースから取得した求人数: %d件\n", len(allJobs))
+
+	// スキルでフィルタリング
+	goJobs, err := db.GetJobsBySkill("Go")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Goスキルを持つ求人: %d件\n", len(goJobs))
+
+	// リモート可能な求人
+	remoteJobs, err := db.GetJobsByRemote()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("リモート可能な求人: %d件\n", len(remoteJobs))
+}
+```
+
+#### 実行方法
+
+```bash
+# 必要なファイルを指定して実行
+go run models.go processing.go database.go test_database.go
+```
+
+**注意:** 実行するとカレントディレクトリに `jobs.db` ファイルが作成されます。
+
+---
+
+## テストの実行（go testを使う場合）
+
+上級者向け: `testing`パッケージを使ったユニットテストを作成することもできます。
+
+```bash
+# テストファイルを作成 (例: processing_test.go)
+go test -v
 ```
 
 ---

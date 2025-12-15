@@ -1,82 +1,50 @@
 package main
 
 import (
-	"encoding/xml"
 	"fmt"
-	"io"
-	"os"
 )
 
-// Job は求人情報を表す構造体
-type Job struct {
-	ID                  string          `xml:"id"`
-	Title               string          `xml:"title"`
-	Company             Company         `xml:"company"`
-	Description         string          `xml:"description"`
-	Salary              Salary          `xml:"salary"`
-	EmploymentType      string          `xml:"employment_type"`
-	RequiredSkills      RequiredSkills  `xml:"required_skills"`
-	PostedDate          string          `xml:"posted_date"`
-	ApplicationDeadline string          `xml:"application_deadline"`
-	IsRemote            bool            `xml:"is_remote"`
-}
-
-// Company は企業情報を表す構造体
-type Company struct {
-	Name     string `xml:"name"`
-	Location string `xml:"location"`
-}
-
-// Salary は給与情報を表す構造体
-type Salary struct {
-	Min      int    `xml:"min"`
-	Max      int    `xml:"max"`
-	Currency string `xml:"currency"`
-}
-
-// RequiredSkills は必要スキルを表す構造体
-type RequiredSkills struct {
-	Skills []string `xml:"skill"`
-}
-
-// Jobs はJobのリストを表す構造体
-type Jobs struct {
-	XMLName xml.Name `xml:"jobs"`
-	JobList []Job    `xml:"job"`
-}
-
-// LoadJobsFromXML はXMLファイルから求人データを読み込む
-func LoadJobsFromXML(filename string) (*Jobs, error) {
+// LoadJobsFromXMLLevel1 はXMLファイルから求人データを読み込む（レベル1用）
+// jobs.xmlのように給与が構造化されたデータを読み込む
+func LoadJobsFromXMLLevel1(filename string) (*JobsLevel1, error) {
 	// TODO: ここにXMLファイルを読み込むコードを実装してください
 	// ヒント:
 	// 1. os.Open()でファイルを開く
 	// 2. defer file.Close()でファイルを閉じる
 	// 3. io.ReadAll()でファイルの内容を読み込む
 	// 4. xml.Unmarshal()でXMLをパース
+	// 
+	// 必要なインポート:
+	// import (
+	//     "encoding/xml"
+	//     "io"
+	//     "os"
+	// )
 	return nil, fmt.Errorf("not implemented")
 }
 
-// FilterBySkill は指定されたスキルを持つ求人をフィルタリングする
-func FilterBySkill(jobs []Job, skill string) []Job {
+// FilterBySkillLevel1 は指定されたスキルを持つ求人をフィルタリングする（レベル1用）
+func FilterBySkillLevel1(jobs []JobLevel1, skill string) []JobLevel1 {
 	// TODO: ここに指定されたスキルを持つ求人をフィルタリングするコードを実装してください
+	// HINT: strings.EqualFold() を使うと大文字小文字を無視した比較ができます
 	return nil
 }
 
-// FilterByRemote はリモート可能な求人をフィルタリングする
-func FilterByRemote(jobs []Job) []Job {
+// FilterByRemoteLevel1 はリモート可能な求人をフィルタリングする（レベル1用）
+func FilterByRemoteLevel1(jobs []JobLevel1) []JobLevel1 {
 	// TODO: ここにリモート可能な求人をフィルタリングするコードを実装してください
 	return nil
 }
 
-// FilterBySalaryRange は指定された給与範囲内の求人をフィルタリングする
-func FilterBySalaryRange(jobs []Job, minSalary, maxSalary int) []Job {
+// FilterBySalaryRangeLevel1 は指定された給与範囲内の求人をフィルタリングする（レベル1用）
+func FilterBySalaryRangeLevel1(jobs []JobLevel1, minSalary, maxSalary int) []JobLevel1 {
 	// TODO: ここに指定された給与範囲内の求人をフィルタリングするコードを実装してください
 	// ヒント: 求人の最低給与がminSalary以上、最高給与がmaxSalary以下のものを抽出
 	return nil
 }
 
-// PrintJob は求人情報を整形して出力する
-func PrintJob(job Job) {
+// PrintJobLevel1 は求人情報を整形して出力する（レベル1用）
+func PrintJobLevel1(job JobLevel1) {
 	fmt.Printf("=====================================\n")
 	fmt.Printf("求人ID: %s\n", job.ID)
 	fmt.Printf("タイトル: %s\n", job.Title)
@@ -94,7 +62,7 @@ func PrintJob(job Job) {
 
 func main() {
 	// XMLファイルから求人データを読み込む
-	jobs, err := LoadJobsFromXML("jobs.xml")
+	jobs, err := LoadJobsFromXMLLevel1("jobs.xml")
 	if err != nil {
 		fmt.Printf("エラー: %v\n", err)
 		return
@@ -105,27 +73,27 @@ func main() {
 	// すべての求人を表示
 	fmt.Println("=== すべての求人 ===")
 	for _, job := range jobs.JobList {
-		PrintJob(job)
+		PrintJobLevel1(job)
 	}
 
 	// Goスキルを持つ求人をフィルタリング
 	fmt.Println("\n=== Goスキルを持つ求人 ===")
-	goJobs := FilterBySkill(jobs.JobList, "Go")
+	goJobs := FilterBySkillLevel1(jobs.JobList, "Go")
 	for _, job := range goJobs {
-		PrintJob(job)
+		PrintJobLevel1(job)
 	}
 
 	// リモート可能な求人をフィルタリング
 	fmt.Println("\n=== リモート可能な求人 ===")
-	remoteJobs := FilterByRemote(jobs.JobList)
+	remoteJobs := FilterByRemoteLevel1(jobs.JobList)
 	for _, job := range remoteJobs {
-		PrintJob(job)
+		PrintJobLevel1(job)
 	}
 
 	// 給与範囲でフィルタリング（600万円〜1000万円）
 	fmt.Println("\n=== 給与600万円〜1000万円の求人 ===")
-	salaryJobs := FilterBySalaryRange(jobs.JobList, 6000000, 10000000)
+	salaryJobs := FilterBySalaryRangeLevel1(jobs.JobList, 6000000, 10000000)
 	for _, job := range salaryJobs {
-		PrintJob(job)
+		PrintJobLevel1(job)
 	}
 }
