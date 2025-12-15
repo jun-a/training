@@ -1,0 +1,41 @@
+# バイナリ
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+job-training
+
+# テスト用バイナリ
+*.test
+
+# カバレッジファイル
+*.out
+
+# データベースファイル
+*.db
+*.sqlite
+*.sqlite3
+
+# テストハーネスファイル（学習者が作成）
+test_*.go
+
+# 依存関係
+vendor/
+
+# Ruby関連
+Gemfile.lock
+.bundle/
+
+# IDEの設定ファイル
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Macの設定ファイル
+.DS_Store
+
+# ログファイル
+*.log
